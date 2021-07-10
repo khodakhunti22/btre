@@ -1,0 +1,24 @@
+#header {
+    background: #10284e;
+    height: 50px;
+    color: #fff;
+}
+
+h1#head {
+    color: #fff;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.module caption, .inline-group h2 {
+    background: #30CAA0;
+    font-weight: bold;
+}
+
+div.breadcrumbs {
+    background-color: #e9ecef;
+    color: #6C757D;
+}
+
+div.breadcrumbs a{
+    color: #10284E;
+}
