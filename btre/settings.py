@@ -15,7 +15,8 @@ from pathlib import Path
 import os
 env = os.environ
 
-print(os.environ)
+IS_PRODUCTION_SERVER = True
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,15 +25,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env.get('SECRET_KEY')
+SECRET_KEY = "django-insecure-&7@p@)d#pd$6^e$j5k$kk1u0-(00^ihr7mz4&11^!aqmg$l(+3"
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 
 # Application definition
 
-ALLOWED_HOSTS = ['18.223.248.217']
+ALLOWED_HOSTS = ['18.223.248.217', '127.0.0.1']
 
 INSTALLED_APPS = [
     'pages.apps.PagesConfig',
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'storages'
 ]
 
 MIDDLEWARE = [
@@ -79,21 +82,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'btre.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env.get('DB_DB'),
-        'USER': env.get('DB_USER'),
-        'PASSWORD': env.get('DB_PASSWORD'),
-        'HOST': env.get('DB_HOST')
-    }
-}
-
-
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
@@ -112,7 +100,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -126,44 +113,109 @@ USE_L10N = True
 
 USE_TZ = True
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
+if IS_PRODUCTION_SERVER:
+
+    # Google Cloud authentication
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(
     BASE_DIR, "credentials.json")
 
-DEFAULT_FILE_STORAGE = 'btre.gcloud.GoogleCloudMediaFileStorage'
-STATICFILES_STORAGE = 'btre.gcloud.GoogleCloudStaticFileStorage'
+    # # Database
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.postgresql',
+    #         'NAME': "postgres",
+    #         'USER': "khodakhunti",
+    #         'PASSWORD': "Kh0d@khunti",
+    #         'HOST': env.get('DB_HOST')
+    #     }
+    # }
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'btredb',
+            'USER': 'karan',
+            'PASSWORD': 'karan',
+            'HOST': 'localhost'
+        }
+    }
+    STORAGE_DEST = 'gcloud'
 
-GS_PROJECT_ID = env.get('GS_PROJECT_ID')
-GS_STATIC_BUCKET_NAME = env.get('GS_STATIC_BUCKET_NAME')
-GS_MEDIA_BUCKET_NAME = env.get('GS_MEDIA_BUCKET_NAME')
+    if STORAGE_DEST == 'gcloud':
+        # static and meadia file storage for Production server
+        DEFAULT_FILE_STORAGE = 'btre.gcloud.GoogleCloudMediaFileStorage'
+        STATICFILES_STORAGE = 'btre.gcloud.GoogleCloudStaticFileStorage'
+
+        # Cloud buckets
+        GS_PROJECT_ID = env.get('GS_PROJECT_ID')
+        GS_STATIC_BUCKET_NAME = env.get('GS_STATIC_BUCKET_NAME')
+        GS_MEDIA_BUCKET_NAME = env.get('GS_STATIC_BUCKET_NAME')
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.2/howto/static-files/
+        # Static files (CSS, JavaScript, Imagess
+        STATIC_ROOT = 'static/'
+        STATIC_URL = 'https://storage.googleapis.com/{}/static/'.format(GS_STATIC_BUCKET_NAME)
+        STATICFILES_DIRS = [
+            Path.joinpath(BASE_DIR, 'btre/static')
+        ]
 
-STATIC_ROOT = "/static/"
-STATIC_URL = 'https://storage.googleapis.com/{}/'.format(GS_STATIC_BUCKET_NAME)
-STATICFILES_DIRS = [
-    Path.joinpath(BASE_DIR, 'btre/static')
-]
+        # Media Folder Settings
+        MEDIA_ROOT = 'media/'
+        MEDIA_URL = 'https://storage.googleapis.com/{}/media/'.format(GS_MEDIA_BUCKET_NAME)
 
-UPLOAD_ROOT = 'media/uploads/'
-DOWNLOAD_ROOT = os.path.join(BASE_DIR, "static/media/downloads")
-DOWNLOAD_URL = STATIC_URL + "media/downloads"
+    if STORAGE_DEST == 'aws':
+        AWS_ACCESS_KEY_ID = env.get('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = env.get('AWS_SECRET_ACCESS_KEY')
+        AWS_STORAGE_BUCKET_NAME = env.get('AWS_STORAGE_BUCKET_NAME')
+
+        AWS_S3_FILE_OVERWRITE = False
+        AWS_DEFAULT_ACL = None
+        DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+        STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
+
+        STATIC_URL = '/static/'
+        STATICFILES_DIRS = [
+            Path.joinpath(BASE_DIR, 'btre/static')
+        ]
+        STATIC_ROOT = Path.joinpath(BASE_DIR, 'assets/static')
+
+        # Media Folder Settings
+        MEDIA_URL = '/media/'
+        MEDIA_ROOT = Path.joinpath(BASE_DIR, 'assets/media')
+
+    
+else:
+    # Database
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'btredb',
+            'USER': 'karan',
+            'PASSWORD': 'karan',
+            'HOST': 'localhost'
+        }
+    }
+
+    # Static files (CSS, JavaScript, Imagess
+    STATIC_URL = '/static/'
+    STATICFILES_DIRS = [
+        Path.joinpath(BASE_DIR, 'btre/static')
+    ]
+    STATIC_ROOT = Path.joinpath(BASE_DIR, 'assets/static')
+
+    # Media Folder Settings
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = Path.joinpath(BASE_DIR, 'assets/media')
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Media Folder Settings
-MEDIA_URL = 'https://storage.googleapis.com/{}/'.format(GS_MEDIA_BUCKET_NAME)
-MEDIA_ROOT = "media/"
 
 # Messages
 MESSAGE_TAGS = {
     messages.ERROR: 'danger'
 }
 
+
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
